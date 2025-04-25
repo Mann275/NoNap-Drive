@@ -27,9 +27,6 @@ This project uses real-time facial landmark detection to monitor a driver's aler
 | `NoNap_Drive.py`      | Improved detection with adjusted thresholds |
 | `SMS_NoNap_Drive.py`  | Includes Twilio SMS functionality for alerts |
 
-### `Facical_Landmark.py`
-This script uses `dlib` to detect facial landmarks such as the eyes, eyebrows, and mouth. It serves as the foundation for the Eye Aspect Ratio (EAR) and Mouth Aspect Ratio (MAR) calculations. By detecting the position and movement of these facial features, it helps in tracking the alertness level of the driver.
-
 ## 🛠 Requirements
 
 - Python 3.7+
