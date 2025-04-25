@@ -9,7 +9,7 @@ Use the following command to install all necessary libraries:
 ```
 pip install numpy opencv-python dlib imutils pygame twilio
 ```
-⚠️ Twilio is only needed for SMS_NoNap_Drive.py. Use Python 3.7 or above.
+⚠️ Twilio is only needed for ```SMS_NoNap_Drive.py```. Use Python 3.7 or above.
 
 
 
