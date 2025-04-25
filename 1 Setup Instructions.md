@@ -23,11 +23,11 @@ Place the file in the same folder as your .py scripts.
 
 ## 3. Important Notes
 
-Make sure your webcam is connected.
+Make sure your ```webcam``` is connected.
 
-alarm.wav must be in the same directory for sound alerts.
+```alarm.wav``` must be in the same directory for sound alerts.
 
-Press ESC anytime to safely exit the program.
+Press ```ESC``` anytime to safely exit the program.
 
 ## 4. How to Run the Project
 Use the following commands based on which file you want to run:
