@@ -178,4 +178,4 @@ If you encounter any issues or have questions:
 
 ---
 
-Made with ❤️ for safer roads
+Made with ❤️ for safer roads.
