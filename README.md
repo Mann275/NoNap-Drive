@@ -3,7 +3,6 @@
 
 [![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://python.org)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.0+-green.svg)](https://opencv.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A real-time computer vision system that detects driver drowsiness and fatigue to prevent road accidents. The system monitors facial features and provides immediate alerts through sound and SMS notifications when signs of drowsiness are detected.
 
@@ -13,8 +12,6 @@ A real-time computer vision system that detects driver drowsiness and fatigue to
 
 - [About The Project](#about-the-project)
 - [Problem Statement](#problem-statement)
-- [Features](#features)
-- [System Requirements](#system-requirements)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
