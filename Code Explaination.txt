@@ -1,0 +1,228 @@
+1. Import Libraries
+
+import cv2
+import numpy as np
+import dlib
+from imutils import face_utils
+import threading
+import pygame
+import time
+
+cv2: OpenCV library for image processing and computer vision tasks, including reading from the camera, handling images, and showing them.
+numpy: A library for working with arrays and matrices. Used here to handle points and calculate distances.
+dlib: A machine learning library used here for facial landmark detection and face detection.
+face_utils: A helper module from imutils used to manipulate facial landmark points.
+threading: A module that allows you to run multiple threads concurrently, used here to play the buzzer sound in a separate thread.
+pygame: A library used for sound playback, specifically to play an alarm sound when the user is detected as drowsy or sleeping.
+time: Used for timestamping events (like when the eyes are closed for a certain period).
+
+2. Initialize Camera
+
+cap = cv2.VideoCapture(0)
+
+This line initializes the webcam. The 0 refers to the default camera on the system.
+
+3. Initialize Pygame for Sound
+
+pygame.mixer.init()
+
+Initializes the pygame mixer, which handles the audio playback (in this case, the alarm sound).
+
+4. Load the Buzzer Sound
+
+try:
+    pygame.mixer.music.load("alarm.wav")
+except Exception as e:
+    print(f"Error loading alarm sound: {e}")
+    cap.release()
+    cv2.destroyAllWindows()
+    exit()
+
+Attempts to load an alarm sound (alarm.wav) using Pygame. If the file isn't found or there's any error, it releases the camera, closes all OpenCV windows, and exits the program.
+
+5. Load the Face Detection Model
+
+try:
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+except Exception as e:
+    print(f"Error loading dlib models: {e}")
+    print("Ensure 'shape_predictor_68_face_landmarks.dat' is in the same directory.")
+    cap.release()
+    cv2.destroyAllWindows()
+    exit()
+
+Initializes the dlib face detector (detector) and the landmark predictor (predictor), which are used to detect faces and facial landmarks. If the models are not found or an error occurs, the program gracefully exits.
+
+6. Initialize Variables for Tracking States
+
+sleep = 0
+drowsy = 0
+active = 0
+status = ""
+color = (0, 0, 0)
+buzzer_playing = False
+eyes_closed_start = None
+
+sleep, drowsy, active: Variables that track how long the user has been in each state (sleeping, drowsy, active).
+status: Holds the current status (sleeping, drowsy, or active).
+color: Determines the color to display for the status (red for sleeping, blue for drowsy, green for active).
+buzzer_playing: Keeps track of whether the buzzer is currently playing.
+eyes_closed_start: Holds the timestamp when the eyes are first detected as closed.
+
+7. Function to Calculate Euclidean Distance
+
+This function calculates the Euclidean distance between two points. It's used to compute the distances between key points around the eyes and face landmarks.
+
+8. Function to Determine Eye Blink (Eye Aspect Ratio)
+
+def blinked(a, b, c, d, e, f):
+    up = compute(b, d) + compute(c, e)
+    down = compute(a, f)
+    ratio = up / (2.0 * down)
+
+    if ratio > 0.26:  # Eyes are open
+        return 2
+    elif 0.20 < ratio <= 0.26:  # Eyes are partially closed
+        return 1
+    else:  # Eyes are fully closed
+        return 0
+
+blinked: This function calculates the Eye Aspect Ratio (EAR) to determine if the eyes are open, partially closed, or fully closed based on the distances between specific landmarks around the eyes.
+up: The sum of the vertical distances between two pairs of points around the eye.
+down: The horizontal distance between two points on the eyelid.
+ratio: The ratio of these distances helps determine if the eyes are open, partially closed, or fully closed.
+
+9. Function to Play Buzzer Sound
+
+def play_buzzer():
+    global buzzer_playing
+    if not pygame.mixer.music.get_busy():  # Play sound only if it's not already playing
+        pygame.mixer.music.play()
+        buzzer_playing = True
+
+
+This function plays the buzzer sound if it's not already playing (checked using pygame.mixer.music.get_busy()).
+
+10. Function to Stop Buzzer Sound
+
+def stop_buzzer():
+    global buzzer_playing
+    if pygame.mixer.music.get_busy():  # Stop sound if it's playing
+        pygame.mixer.music.stop()
+        buzzer_playing = False
+
+This function stops the buzzer sound if it is currently playing.
+
+11. Main Loop for Capturing Frames
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to capture frame. Exiting...")
+        break
+
+while True: Starts an infinite loop for continuous frame capture.
+ret, frame = cap.read(): Captures a frame from the webcam. If it fails, the program prints an error and exits.
+
+12. Convert to Grayscale and Detect Faces
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = detector(gray)
+
+Converts the captured frame to grayscale (gray), as the face detector works better on grayscale images. Then, it detects faces in the image using detector.
+
+13. Process Each Detected Face
+
+    face_frame = frame.copy()
+    for face in faces:
+        x1, y1, x2, y2 = face.left(), face.top(), face.right(), face.bottom()
+        cv2.rectangle(face_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+face_frame: Creates a copy of the original frame for drawing the face rectangle.
+For each detected face, it extracts the coordinates (left, top, right, bottom) and draws a rectangle around the face.
+
+14. Detect Facial Landmarks
+
+        landmarks = predictor(gray, face)
+        landmarks = face_utils.shape_to_np(landmarks)
+
+Uses the predictor to detect the 68 facial landmarks for the detected face. Converts the landmark points to a NumPy array for easier processing.
+
+15. Check Eye Status (Blink Detection)
+
+        left_blink = blinked(landmarks[36], landmarks[37], landmarks[38], landmarks[41], landmarks[40], landmarks[39])
+        right_blink = blinked(landmarks[42], landmarks[43], landmarks[44], landmarks[47], landmarks[46], landmarks[45])
+
+Checks whether the left or right eye is open, partially closed, or fully closed using the blinked function.
+
+16. Update States Based on Blink Detection
+
+        if left_blink == 0 or right_blink == 0:
+            if eyes_closed_start is None:
+                eyes_closed_start = time.time()
+            sleep += 1
+            drowsy = 0
+            active = 0
+            if time.time() - eyes_closed_start > 3:
+                status = "SLEEPING !!!"
+                color = (255, 0, 0)
+                threading.Thread(target=play_buzzer).start()
+
+If either eye is closed, it starts tracking the time (eyes_closed_start) and sets the sleep state. If the eyes remain closed for more than 3 seconds, the status is updated to "SLEEPING !!!" and a buzzer is triggered.
+
+17. Handle Drowsy State
+
+        elif left_blink == 1 or right_blink == 1:
+            sleep = 0
+            active = 0
+            drowsy += 1
+            eyes_closed_start = None
+            status = "Drowsy !"
+            color = (0, 0, 255)
+            stop_buzzer()
+
+If the eyes are partially closed, it sets the state to "Drowsy". The buzzer is stopped if it was playing.
+
+18. Handle Active State
+
+        else:
+            sleep = 0
+            drowsy = 0
+            active += 1
+            eyes_closed_start = None
+            status = "Active :)"
+            color = (0, 255, 0)
+            stop_buzzer()
+
+If the eyes are open, the state is set to "Active". The buzzer is stopped.
+
+19. Display Status and Draw Landmarks
+
+        cv2.putText(frame, status, (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 3)
+        for n in range(0, 68):
+            (x, y) = landmarks[n]
+            cv2.circle(face_frame, (x, y), 1, (255, 255, 255), -1)
+
+The current status (sleeping, drowsy, active) is displayed on the frame.
+The facial landmarks are drawn on the frame as small circles.
+
+20. Show Frames and Handle Exit
+
+    cv2.imshow("Frame", frame)
+    cv2.imshow("Result of detector", face_frame)
+    key = cv2.waitKey(1)
+    if key == 27:
+        break
+
+Displays the original frame and the frame with detected landmarks.
+Exits the loop if the ESC key (ASCII 27) is pressed.
+
+21. Release Resources and Close Windows
+
+cap.release()
+pygame.mixer.music.stop()
+pygame.quit()
+cv2.destroyAllWindows()
+
+Releases the camera, stops the buzzer, quits Pygame, and closes all OpenCV windows.
